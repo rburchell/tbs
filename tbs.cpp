@@ -9,39 +9,7 @@
 #include <sstream>
 
 #include "futils.h"
-
-class directory
-{
-public:
-    directory(const char *dirname);
-    ~directory();
-    bool is_open() const;
-
-    dirent *next_entry();
-
-private:
-    DIR *m_dir;
-};
-
-directory::directory(const char *dirname)
-{
-    m_dir = opendir(dirname);
-}
-
-directory::~directory()
-{
-    closedir(m_dir);
-}
-
-bool directory::is_open() const
-{
-    return m_dir != NULL;
-}
-
-dirent *directory::next_entry()
-{
-    return readdir(m_dir);
-}
+#include "directory.h"
 
 namespace builder
 {
