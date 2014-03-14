@@ -8,16 +8,17 @@
 #include <iterator>
 #include <sstream>
 
+#include "forkfd.h"
 #include "futils.h"
 #include "directory.h"
 
 namespace builder
 {
-    bool compile(const std::string &file);
+    int compile(const std::string &file);
     bool link(const std::string &target, const std::vector<std::string> &cfiles);
 }
 
-bool builder::compile(const std::string &file)
+int builder::compile(const std::string &file)
 {
     std::vector<std::string> params;
     const char *extension = futils::extension(file.c_str());
@@ -35,8 +36,14 @@ bool builder::compile(const std::string &file)
     std::copy(params.begin(), params.end(), std::ostream_iterator<std::string>(ss, " "));
     std::string cmd = ss.str();
 
-    int retval = system(cmd.c_str());
-    return retval == 0;
+    pid_t pid;
+    int fd = forkfd(FFD_CLOEXEC | FFD_NONBLOCK, &pid);
+
+    if (fd == FFD_CHILD_PROCESS) {
+        int retval = system(cmd.c_str());
+        exit(0);
+    }
+    return fd;
 }
 
 bool builder::link(const std::string &target, const std::vector<std::string> &cfiles)
@@ -81,12 +88,27 @@ int main(int argc, char **argv)
     // TODO: optimize for the case where there's only a single file and don't
     // generate a .o
 
+    fd_set readfds;
+    FD_ZERO(&readfds);
+
     // generate .o's and link after
     for (std::string name : cfiles) {
         printf("compiling %s\n", name.c_str());
-        bool compiled_ok = builder::compile(name);
-//        printf("compilation of %s: %d\n", name.c_str(), compiled_ok);
+        int compile_fd = builder::compile(name);
+        // TODO: error check compile_fd
+        FD_SET(compile_fd, &readfds);
+        printf("compilation of %s: %d\n", name.c_str(), compile_fd);
     }
+
+
+    int fds = 0;
+
+    // monitor until all compiles are done
+    do {
+        fd_set read_copy = readfds;
+        fds = select(FD_SETSIZE, &read_copy, NULL, NULL, NULL);
+        printf("%d compiles finished, want %d, err %s\n", fds, cfiles.size(), strerror(errno));
+    } while (fds != cfiles.size());
 
     printf("linking %s\n", target.c_str());
     bool linked_ok = builder::link(target, cfiles);
