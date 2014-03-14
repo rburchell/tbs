@@ -39,10 +39,11 @@ int builder::compile(const std::string &file)
     pid_t pid;
     int fd = forkfd(FFD_CLOEXEC | FFD_NONBLOCK, &pid);
 
-    if (fd == FFD_CHILD_PROCESS) {
-        int retval = system(cmd.c_str());
-        exit(0);
-    }
+    if (fd == -1)
+        perror("builder::compile: forkfd");
+    else if (fd == FFD_CHILD_PROCESS)
+        exit(system(cmd.c_str()));
+
     return fd;
 }
 
@@ -89,13 +90,15 @@ int main(int argc, char **argv)
         for (int i = 0; i < spawnjobs; ++i) {
             std::string name = ccopy[i];
             int compile_fd = builder::compile(name);
+            if (compile_fd == -1) {
+                printf("forkfd for compile job %s failed\n", name.c_str());
+                return -1;
+            }
+
             printf("compiling %s, job %d, compile_fd %d\n", name.c_str(), i, compile_fd);
-            // TODO: error check compile_fd
             FD_SET(compile_fd, &readfds);
             printf("compilation of %s: %d\n", name.c_str(), compile_fd);
         }
-
-        ccopy.erase(ccopy.begin(), ccopy.begin() + spawnjobs);
 
         int fds = 0;
 
@@ -109,9 +112,21 @@ int main(int argc, char **argv)
         // close completed jobs
         // TODO: start new jobs as old ones finish
         for (int i = 0; i < FD_SETSIZE; ++i) {
-            if (FD_ISSET(i, &readfds))
+            if (FD_ISSET(i, &readfds)) {
+                siginfo_t info;
+                int bread = read(i, &info, sizeof(info));
+                if (bread != sizeof(info)) {
+                    perror("can't get siginfo_t struct from forkfd");
+                    return -1;
+                }
+
+                printf("fd %d had return code %d\n", i, info.si_status);
+
                 close(i);
+            }
         }
+
+        ccopy.erase(ccopy.begin(), ccopy.begin() + spawnjobs);
     }
 
     printf("linking %s\n", target.c_str());
