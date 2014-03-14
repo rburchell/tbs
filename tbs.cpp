@@ -13,6 +13,12 @@
 #include "futils.h"
 #include "directory.h"
 
+#define EINTR_LOOP(var, cmd) \
+    do { \
+        var = cmd; \
+    } while (var == -1 && errno == EINTR)
+
+
 namespace builder
 {
     int compile(const std::string &file);
@@ -94,16 +100,15 @@ int main(int argc, char **argv)
             int fds = 0;
 
             // monitor until all compiles are done
-            do {
-                fds = select(FD_SETSIZE, &readfds, NULL, NULL, NULL);
-            } while (fds == -1 && errno == EINTR);
+            EINTR_LOOP(fds, select(FD_SETSIZE, &readfds, NULL, NULL, NULL));
 
             // close completed jobs
             for (auto it = curjobs.begin(); it != curjobs.end();) {
                 if (FD_ISSET(it->first, &readfds)) {
                     siginfo_t info;
-                    int bread = read(it->first, &info, sizeof(info));
-                    if (bread != sizeof(info)) {
+                    int retval = 0;
+                    EINTR_LOOP(retval, read(it->first, &info, sizeof(info)));
+                    if (retval != sizeof(info)) {
                         perror("can't get siginfo_t struct from forkfd");
                         return -1;
                     }
@@ -115,7 +120,7 @@ int main(int argc, char **argv)
                         return -1;
                     }
 
-                    close(it->first);
+                    EINTR_LOOP(retval, close(it->first));
                     it = curjobs.erase(it);
                 } else {
                     it++;
