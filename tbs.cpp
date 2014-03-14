@@ -73,42 +73,46 @@ int main(int argc, char **argv)
     char targbuf[PATH_MAX];
     std::string target = futils::basename(getcwd(targbuf, PATH_MAX));
 
-    std::vector<std::string> cfiles;
-
-    dirent *dnt = NULL;
-    while ((dnt = d.next_entry()) != NULL) {
-        const char *extension = futils::extension(dnt->d_name);
-        if (extension) {
-            if (strcmp(extension, "cpp") == 0 ||
-                strcmp(extension, "c") == 0)
-                cfiles.push_back(dnt->d_name);
-        }
-    }
+    std::vector<std::string> cfiles = d.source_files();
+    std::vector<std::string> ccopy = cfiles;
 
     // TODO: optimize for the case where there's only a single file and don't
     // generate a .o
+    while (ccopy.size()) {
+        std::vector<int> cfds;
+        fd_set readfds;
 
-    fd_set readfds;
-    FD_ZERO(&readfds);
+        FD_ZERO(&readfds);
 
-    // generate .o's and link after
-    for (std::string name : cfiles) {
-        printf("compiling %s\n", name.c_str());
-        int compile_fd = builder::compile(name);
-        // TODO: error check compile_fd
-        FD_SET(compile_fd, &readfds);
-        printf("compilation of %s: %d\n", name.c_str(), compile_fd);
+        int spawnjobs = std::min(2 /* TODO: hardcoding */, (int)ccopy.size());
+
+        for (int i = 0; i < spawnjobs; ++i) {
+            std::string name = ccopy[i];
+            int compile_fd = builder::compile(name);
+            printf("compiling %s, job %d, compile_fd %d\n", name.c_str(), i, compile_fd);
+            // TODO: error check compile_fd
+            FD_SET(compile_fd, &readfds);
+            printf("compilation of %s: %d\n", name.c_str(), compile_fd);
+        }
+
+        ccopy.erase(ccopy.begin(), ccopy.begin() + spawnjobs);
+
+        int fds = 0;
+
+        // monitor until all compiles are done
+        do {
+            fd_set read_copy = readfds;
+            fds = select(FD_SETSIZE, &read_copy, NULL, NULL, NULL);
+//            printf("%d compiles finished, want %d, err %s\n", fds, cfiles.size(), strerror(errno));
+        } while (fds != spawnjobs);
+
+        // close completed jobs
+        // TODO: start new jobs as old ones finish
+        for (int i = 0; i < FD_SETSIZE; ++i) {
+            if (FD_ISSET(i, &readfds))
+                close(i);
+        }
     }
-
-
-    int fds = 0;
-
-    // monitor until all compiles are done
-    do {
-        fd_set read_copy = readfds;
-        fds = select(FD_SETSIZE, &read_copy, NULL, NULL, NULL);
-        printf("%d compiles finished, want %d, err %s\n", fds, cfiles.size(), strerror(errno));
-    } while (fds != cfiles.size());
 
     printf("linking %s\n", target.c_str());
     bool linked_ok = builder::link(target, cfiles);
