@@ -2,6 +2,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #include <map>
 #include <string>
@@ -21,6 +22,33 @@
 
 int main(int argc, char **argv)
 {
+    int maxjobs = 2; // TODO: determine from core count
+
+    while (1) {
+        static struct option long_options[] =
+        {
+            { "jobs",  required_argument, NULL, 'j' }
+        };
+
+        int option_index = 0;
+        int c = getopt_long (argc, argv, ":j::", long_options, &option_index);
+
+        if (c == -1)
+            break;
+
+        switch (c) {
+            case 'j':
+                if (!optarg) {
+                    fprintf(stderr, "-j requires a number of jobs\n");
+                    return -1;
+                }
+
+                maxjobs = atoi(optarg);
+                break;
+        }
+    }
+
+
     directory d(".");
 
     char targbuf[PATH_MAX];
@@ -28,8 +56,6 @@ int main(int argc, char **argv)
 
     std::vector<std::string> cfiles = d.source_files();
     std::vector<std::string> ccopy = cfiles;
-
-    int maxjobs = 2;
     std::map<int, std::string> curjobs;
 
     // while there are things to build
