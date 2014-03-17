@@ -1,0 +1,34 @@
+the spec
+========
+
+a project contains multiple targets.
+a target contains multiple translation units
+translation units are compiled, and then linked into targets
+
+a project may be specified via a text-format language (TBD) or by automagic
+determination (the usual method) - which involves recursively scanning
+directories to build a tree of targets.
+
+an automagic target is defined as any translation unit in any directory, or tree of
+directories, under the directory in which tbs is run, minus any directories
+containing a subtarget, or any explicitly specified targets.
+
+the name of the target may be changed from the autodetected default (the
+directory name) by specifying the Target property:
+
+/* $Target: mycoolbinary */
+/* $TargetType: dll */ -- default is 'app'
+
+specifying the target property will cause the creation of a new target in the
+directory it is specified, and any subdirectories of that directory. specifying
+the target property twice in one directory is illegal.
+
+translation units may set properties in code which affect the compilation and
+linking stages, e.g:
+
+/* $CompileFlags: -std=c++11 */
+/* $LinkerFlags: -lfoo */
+/* $PkgConfig: sqlite3 */
+
+additional processing may also be requested by other things in the source file,
+e.g. Q_OBJECT macros.
