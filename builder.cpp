@@ -2,6 +2,7 @@
 #include <sstream>
 #include <string>
 
+#include "target.h"
 #include "futils.h"
 #include "forkfd.h"
 #include "builder.h"
@@ -35,17 +36,15 @@ int builder::compile(const std::string &file)
     return fd;
 }
 
-bool builder::link(const std::string &target, const std::vector<std::string> &cfiles)
+bool builder::link(target *target)
 {
     std::vector<std::string> params;
     params.push_back("g++");
     params.push_back("-o");
-    params.push_back(target);
+    params.push_back(target->name());
 
-    for (std::string name : cfiles) {
-        std::string fname = name.substr(0, name.find_last_of("."));
-        params.push_back(fname + ".o");
-    }
+    std::vector<std::string> ofiles = target->object_files();
+    params.insert(params.end(), ofiles.begin(), ofiles.end());
 
     std::stringstream ss;
     std::copy(params.begin(), params.end(), std::ostream_iterator<std::string>(ss, " "));
