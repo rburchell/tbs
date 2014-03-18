@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 
     for (target *t : targets) {
         printf("building target %s\n", t->name().c_str());
-        std::vector<std::string> cfiles = t->source_files();
+        std::vector<translation_unit> cfiles = t->translation_units();
         std::map<int, std::string> curjobs;
 
         // while there are things to build
@@ -102,17 +102,17 @@ int main(int argc, char **argv)
             // start builds
             while (curjobs.size() < maxjobs && cfiles.size()) {
                 // take a job
-                std::string name = cfiles.back();
+                translation_unit tu = cfiles.back();
                 cfiles.pop_back();
 
-                int compile_fd = builder::compile(name);
+                int compile_fd = builder::compile(tu);
                 if (compile_fd == -1) {
-                    printf("builder for compile job %s failed\n", name.c_str());
+                    printf("builder for compile job %s failed\n", tu.source_name().c_str());
                     return -1;
                 }
 
-                curjobs[compile_fd] = name;
-                printf("compiling %s, compile_fd %d\n", name.c_str(), compile_fd);
+                curjobs[compile_fd] = tu.source_name();
+                printf("compiling %s, compile_fd %d\n", tu.source_name().c_str(), compile_fd);
             }
         }
 

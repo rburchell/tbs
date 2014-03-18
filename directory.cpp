@@ -33,7 +33,7 @@ std::vector<target *> directory::targets() const
     char targbuf[PATH_MAX];
     std::string tname = futils::basename(getcwd(targbuf, PATH_MAX));
     target *t = new target(tname); // TODO: leak
-    std::vector<std::string> cfiles;
+    std::vector<translation_unit> cfiles;
 
     dirent *dnt = NULL;
     while ((dnt = const_cast<directory *>(this)->next_entry()) != NULL) {
@@ -41,11 +41,11 @@ std::vector<target *> directory::targets() const
         if (extension) {
             if (strcmp(extension, "cpp") == 0 ||
                 strcmp(extension, "c") == 0)
-                cfiles.push_back(dnt->d_name);
+                cfiles.push_back(translation_unit(dnt->d_name));
         }
     }
 
-    t->set_source_files(cfiles);
+    t->set_translation_units(cfiles);
     std::vector<target *> targs;
     targs.push_back(t);
     return targs;

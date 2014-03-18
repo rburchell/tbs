@@ -1,16 +1,24 @@
 #include <vector>
 #include <sstream>
 #include <string>
+#include <sys/stat.h>
 
 #include "target.h"
 #include "futils.h"
 #include "forkfd.h"
 #include "builder.h"
 
-int builder::compile(const std::string &file)
+int builder::compile(const translation_unit &tu)
 {
     std::vector<std::string> params;
-    const char *extension = futils::extension(file.c_str());
+    const char *extension = futils::extension(tu.source_name().c_str());
+
+    if (mkdir(".obj", 0777) == -1) {
+        if (errno != EEXIST) {
+            perror("builder::compile: mkdir");
+            return -1;
+        }
+    }
 
     if (strcmp(extension, "cpp") == 0)
         params.push_back("g++");
@@ -18,8 +26,9 @@ int builder::compile(const std::string &file)
         params.push_back("gcc");
 
     params.push_back("-c");
-
-    params.push_back(file);
+    params.push_back(tu.source_name());
+    params.push_back("-o");
+    params.push_back(".obj/" + tu.object_name());
 
     std::stringstream ss;
     std::copy(params.begin(), params.end(), std::ostream_iterator<std::string>(ss, " "));
@@ -43,8 +52,9 @@ bool builder::link(target *target)
     params.push_back("-o");
     params.push_back(target->name());
 
-    std::vector<std::string> ofiles = target->object_files();
-    params.insert(params.end(), ofiles.begin(), ofiles.end());
+    for (const translation_unit &tu : target->translation_units()) {
+        params.push_back(".obj/" + tu.object_name());
+    }
 
     std::stringstream ss;
     std::copy(params.begin(), params.end(), std::ostream_iterator<std::string>(ss, " "));
