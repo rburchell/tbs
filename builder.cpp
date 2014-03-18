@@ -45,14 +45,14 @@ int builder::compile(const translation_unit &tu)
     return fd;
 }
 
-bool builder::link(target *target)
+bool builder::link(const target &target)
 {
     std::vector<std::string> params;
     params.push_back("g++");
     params.push_back("-o");
-    params.push_back(target->name());
+    params.push_back(target.name());
 
-    for (const translation_unit &tu : target->translation_units()) {
+    for (const translation_unit &tu : target.translation_units()) {
         params.push_back(".obj/" + tu.object_name());
     }
 

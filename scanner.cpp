@@ -30,11 +30,12 @@ dirent *scanner::next_entry()
     return readdir(m_dir);
 }
 
-std::vector<target *> scanner::targets() const
+std::vector<target> scanner::targets() const
 {
     char targbuf[PATH_MAX];
     std::string tname = futils::basename(getcwd(targbuf, PATH_MAX));
-    target *t = new target; // TODO: leak
+    std::vector<target> targs(1);
+    target &t = targs[0];
     std::vector<translation_unit> cfiles;
 
     bool has_target = false;
@@ -94,10 +95,8 @@ std::vector<target *> scanner::targets() const
         }
     }
 
-    t->set_name(tname);
-    t->set_translation_units(cfiles);
-    std::vector<target *> targs;
-    targs.push_back(t);
+    t.set_name(tname);
+    t.set_translation_units(cfiles);
     return targs;
 }
 

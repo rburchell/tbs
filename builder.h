@@ -6,7 +6,7 @@
 namespace builder
 {
     int compile(const translation_unit &tu);
-    bool link(target *target);
+    bool link(const target &target);
 }
 
 #endif // BUILDER_H

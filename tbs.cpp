@@ -51,11 +51,11 @@ int main(int argc, char **argv)
 
 
     scanner s(".");
-    std::vector<target *> targets = s.targets();
+    std::vector<target> targets = s.targets();
 
-    for (target *t : targets) {
-        printf("building target %s\n", t->name().c_str());
-        std::vector<translation_unit> cfiles = t->translation_units();
+    for (const target &t : targets) {
+        printf("building target %s\n", t.name().c_str());
+        std::vector<translation_unit> cfiles = t.translation_units();
         std::map<int, std::string> curjobs;
 
         // while there are things to build
@@ -120,7 +120,7 @@ int main(int argc, char **argv)
         // TODO: optimize for the case where there's only a single file and don't
         // generate a .o
 
-        printf("linking %s\n", t->name().c_str());
+        printf("linking %s\n", t.name().c_str());
         bool linked_ok = builder::link(t);
         if (!linked_ok)
             return -1;
