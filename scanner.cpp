@@ -2,6 +2,8 @@
 #include <dirent.h>
 #include <unistd.h>
 
+#include <sstream>
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <regex>
@@ -9,6 +11,11 @@
 #include "target.h"
 #include "scanner.h"
 #include "futils.h"
+
+/* $Foo: 1 */
+/* $Foo.Bar: 1 */
+/* $Foo.Bar.Moo: 1 */
+/* $Foo.Bar.Moo.Cow: 1 */
 
 scanner::scanner(const char *dirname)
 {
@@ -62,28 +69,50 @@ std::vector<target> scanner::targets() const
             while (fgets(buf, LINE_MAX, fd) != NULL) {
                 buf[strlen(buf) - 1] = '\0';
 
-                std::regex pieces_regex("^\\/\\* \\$([a-Z]+): (.+) \\*\\/$", std::regex_constants::icase);
+                std::regex pieces_regex("^\\/\\* \\$([a-Z.]+): (.+) \\*\\/$", std::regex_constants::icase);
                 std::smatch pieces_match;
 
                 if (std::regex_match(std::string(buf), pieces_match, pieces_regex, std::regex_constants::match_any)) {
                     std::cout << buf << '\n';
                     if (pieces_match.size() >= 2) {
-                        if (strcasecmp(pieces_match[1].str().c_str(), "target") == 0) {
-                            if (has_target) {
-                                printf("scanner::targets: target %s already has a target, can't deal with another found in %s\n", tname.c_str(), dnt->d_name);
-                                exit(1);
-                            } else {
-                                tname = pieces_match[2].str();
-                                has_target = true;
+                        // first we lowercase
+                        std::string key = pieces_match[1].str();
+                        std::string value = pieces_match[2].str();
+
+                        // lowercase
+                        std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+
+                        // now split
+                        std::vector<std::string> keybits;
+
+                        std::istringstream iss(key);
+                        std::string token;
+                        while (std::getline(iss, token, '.'))
+                            keybits.push_back(token);
+
+                        printf("scanner::target: %s (%d bits) val %s\n", key.c_str(), keybits.size(), value.c_str());
+
+                        if (keybits.size() == 2) {
+                            if (keybits[0] == "target") {
+                                if (keybits[1] == "name") {
+                                    if (has_target) {
+                                        printf("scanner::targets: target %s already has a target, can't deal with another found in %s\n", tname.c_str(), dnt->d_name);
+                                        exit(1);
+                                    } else {
+                                        tname = value;
+                                        has_target = true;
+                                    }
+                                }
                             }
                         }
                     }
-                    /*
+#if 0
                     for (size_t i = 0; i < pieces_match.size(); ++i) {
                         std::ssub_match sub_match = pieces_match[i];
                         std::string piece = sub_match.str();
                         std::cout << "  submatch " << i << ": " << piece << '\n';
-                    }*/
+                    }
+#endif
                 }
             }
 
