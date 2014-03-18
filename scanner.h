@@ -3,11 +3,11 @@
 
 class target;
 
-class directory
+class scanner
 {
 public:
-    directory(const char *dirname);
-    ~directory();
+    scanner(const char *dirname);
+    ~scanner();
     bool is_open() const;
     std::vector<target *> targets() const;
     std::vector<std::string> source_files() const;

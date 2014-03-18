@@ -15,9 +15,13 @@ std::string translation_unit::object_name() const
     return m_name.substr(0, m_name.find_last_of(".")) + ".o";
 }
 
-target::target(const std::string &name)
-    : m_name(name)
+target::target()
 {
+}
+
+void target::set_name(const std::string &name)
+{
+    m_name = name;
 }
 
 std::string target::name() const

@@ -18,7 +18,8 @@ private:
 class target
 {
 public:
-    target(const std::string &name);
+    target();
+    void set_name(const std::string &name);
     std::string name() const;
     std::vector<translation_unit> translation_units() const;
     void set_translation_units(const std::vector<translation_unit> &files);

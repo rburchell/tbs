@@ -11,7 +11,7 @@
 #include <sstream>
 
 #include "futils.h"
-#include "directory.h"
+#include "scanner.h"
 #include "builder.h"
 #include "target.h"
 
@@ -50,8 +50,8 @@ int main(int argc, char **argv)
     }
 
 
-    directory d(".");
-    std::vector<target *> targets = d.targets();
+    scanner s(".");
+    std::vector<target *> targets = s.targets();
 
     for (target *t : targets) {
         printf("building target %s\n", t->name().c_str());
