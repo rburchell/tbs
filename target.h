@@ -7,12 +7,13 @@
 class translation_unit
 {
 public:
-    translation_unit(const std::string &name);
+    translation_unit(const std::string &path);
+    std::string path() const;
     std::string source_name() const;
     std::string object_name() const;
 
 private:
-    std::string m_name;
+    std::string m_path;
 };
 
 class target

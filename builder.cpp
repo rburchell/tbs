@@ -1,7 +1,9 @@
+#include <unistd.h>
+#include <sys/stat.h>
+
 #include <vector>
 #include <sstream>
 #include <string>
-#include <sys/stat.h>
 
 #include "target.h"
 #include "futils.h"
@@ -12,13 +14,6 @@ int builder::compile(const translation_unit &tu)
 {
     std::vector<std::string> params;
     const char *extension = futils::extension(tu.source_name().c_str());
-
-    if (mkdir(".obj", 0777) == -1) {
-        if (errno != EEXIST) {
-            perror("builder::compile: mkdir");
-            return -1;
-        }
-    }
 
     if (strcmp(extension, "cpp") == 0)
         params.push_back("g++");
@@ -39,8 +34,21 @@ int builder::compile(const translation_unit &tu)
 
     if (fd == -1)
         perror("builder::compile: forkfd");
-    else if (fd == FFD_CHILD_PROCESS)
+    else if (fd == FFD_CHILD_PROCESS) {
+        if (chdir(tu.path().c_str()) == -1) {
+            perror("builder::compile: chdir");
+            return -1;
+        }
+
+        if (mkdir(".obj", 0777) == -1) {
+            if (errno != EEXIST) {
+                perror("builder::compile: mkdir");
+                return -1;
+            }
+        }
+
         exit(system(cmd.c_str()));
+    }
 
     return fd;
 }
@@ -53,7 +61,7 @@ bool builder::link(const target &target)
     params.push_back(target.name());
 
     for (const translation_unit &tu : target.translation_units()) {
-        params.push_back(".obj/" + tu.object_name());
+        params.push_back(tu.path() + "/.obj/" + tu.object_name());
     }
 
     std::stringstream ss;

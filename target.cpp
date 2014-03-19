@@ -1,18 +1,30 @@
-#include "target.h"
+#include <assert.h>
 
-translation_unit::translation_unit(const std::string &name)
+#include "target.h"
+#include "futils.h"
+
+translation_unit::translation_unit(const std::string &path)
 {
-    m_name = name;
+    m_path = path;
+}
+
+std::string translation_unit::path() const
+{
+    //printf("path %s\n", m_path.substr(0, m_path.find_last_of("/")).c_str());
+    return m_path.substr(0, m_path.find_last_of("/"));
 }
 
 std::string translation_unit::source_name() const
 {
-    return m_name;
+    return futils::basename(m_path.c_str());
 }
 
 std::string translation_unit::object_name() const
 {
-    return m_name.substr(0, m_name.find_last_of(".")) + ".o";
+    //printf("for %s\n", m_path.c_str());
+    std::string basename = futils::basename(m_path.c_str());
+    //printf("got %s\n", basename.c_str());
+    return basename.substr(0, basename.find_last_of(".")) + ".o";
 }
 
 target::target()

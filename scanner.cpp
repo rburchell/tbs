@@ -103,7 +103,10 @@ std::vector<target> scanner::targets(const char *dirname)
                 continue;
             }
 
-            translation_unit tu(dnt->d_name);
+            char cpath[PATH_MAX];
+            getcwd(cpath, PATH_MAX); // TODO: won't always be the case?
+            std::string path = std::string(cpath) + "/" + dnt->d_name;
+            translation_unit tu(path);
             if (!keyword_search(t, tu))
                 exit(1); // TODO: refactor
             cfiles.push_back(tu);
