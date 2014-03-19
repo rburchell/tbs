@@ -50,8 +50,7 @@ int main(int argc, char **argv)
     }
 
 
-    scanner s(".");
-    std::vector<target> targets = s.targets();
+    std::vector<target> targets = scanner::targets(".");
 
     for (const target &t : targets) {
         printf("building target %s\n", t.name().c_str());

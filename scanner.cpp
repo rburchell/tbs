@@ -17,27 +17,7 @@
 /* $Foo.Bar.Moo: 1 */
 /* $Foo.Bar.Moo.Cow: 1 */
 
-scanner::scanner(const char *dirname)
-{
-    m_dir = opendir(dirname);
-}
-
-scanner::~scanner()
-{
-    closedir(m_dir);
-}
-
-bool scanner::is_open() const
-{
-    return m_dir != NULL;
-}
-
-dirent *scanner::next_entry()
-{
-    return readdir(m_dir);
-}
-
-bool scanner::keyword_search(target &target, translation_unit &tu)
+static bool keyword_search(target &target, translation_unit &tu)
 {
     /* scan for keywords */
     char buf[LINE_MAX];
@@ -105,7 +85,7 @@ bool scanner::keyword_search(target &target, translation_unit &tu)
     return true;
 }
 
-std::vector<target> scanner::targets() const
+std::vector<target> scanner::targets(const char *dirname)
 {
     char targbuf[PATH_MAX];
     std::string tname = futils::basename(getcwd(targbuf, PATH_MAX));
@@ -114,7 +94,8 @@ std::vector<target> scanner::targets() const
     std::vector<translation_unit> cfiles;
 
     dirent *dnt = NULL;
-    while ((dnt = const_cast<scanner *>(this)->next_entry()) != NULL) {
+    DIR *m_dir = opendir(dirname);
+    while ((dnt = readdir(m_dir)) != NULL) {
         const char *extension = futils::extension(dnt->d_name);
         if (extension) {
             if (strcmp(extension, "cpp") != 0 &&
@@ -128,6 +109,7 @@ std::vector<target> scanner::targets() const
             cfiles.push_back(tu);
         }
     }
+    closedir(m_dir);
 
     if (t.name().empty())
         t.set_name(tname);
