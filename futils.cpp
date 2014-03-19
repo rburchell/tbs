@@ -19,7 +19,7 @@ namespace futils
 
         if (last_slash)
             return ++last_slash; // exclude the slash
-        return last_slash;
+        return fname;
     }
 }
 
