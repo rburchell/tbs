@@ -14,10 +14,10 @@ directories, under the directory in which tbs is run, minus any directories
 containing a subtarget, or any explicitly specified targets.
 
 the name of the target may be changed from the autodetected default (the
-directory name) by specifying the Target property:
+directory name) by specifying the Target.Name property:
 
-/* $Target: mycoolbinary */
-/* $TargetType: dll */ -- default is 'app'
+/* $Target.Name: mycoolbinary */
+/* $Target.Type: dll */ -- default is 'app'
 
 specifying the target property will cause the creation of a new target in the
 directory it is specified, and any subdirectories of that directory. specifying
@@ -26,9 +26,14 @@ the target property twice in one directory is illegal.
 translation units may set properties in code which affect the compilation and
 linking stages, e.g:
 
-/* $CompileFlags: -std=c++11 */
-/* $LinkerFlags: -lfoo */
-/* $PkgConfig: sqlite3 */
+/* $File.CompileFlags: -std=c++11 */
+/* $Target.CompileFlags: -std=c++ */ - modifies cflags over the whole target
+/* $Target.LinkerFlags: -lfoo */
+/* $Target.PkgConfig: sqlite3 */
+
+there are three seperate scopes: File, Target, and Project.
+File affects a single TU, Target affects all files in a target, and Project
+affects all files in all targets.
 
 additional processing may also be requested by other things in the source file,
 e.g. Q_OBJECT macros.
