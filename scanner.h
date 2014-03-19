@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 
+class translation_unit;
 class target;
 
 class scanner
@@ -15,6 +16,8 @@ public:
     dirent *next_entry();
 
 private:
+    static bool keyword_search(target &target, translation_unit &tu);
+
     DIR *m_dir;
 };
 
