@@ -33,7 +33,8 @@ linking stages, e.g:
 
 there are three seperate scopes: File, Target, and Project.
 File affects a single TU, Target affects all files in a target, and Project
-affects all files in all targets.
+affects all files in all targets. some rules only apply to some scopes. linker
+flags & pkgconfig only apply to targets or project.
 
 additional processing may also be requested by other things in the source file,
 e.g. Q_OBJECT macros.
