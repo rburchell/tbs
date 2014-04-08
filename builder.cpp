@@ -62,7 +62,6 @@ bool builder::link(const target &target)
 
     for (const translation_unit &tu : target.translation_units()) {
         params.push_back(tu.path() + "/.obj/" + tu.object_name());
-        printf("linking %s\n", tu.object_name().c_str());
     }
 
     std::stringstream ss;
