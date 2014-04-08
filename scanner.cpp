@@ -11,6 +11,7 @@
 #include "target.h"
 #include "scanner.h"
 #include "futils.h"
+#include "global_options.h"
 
 /* $Foo: 1 */
 /* $Foo.Bar: 1 */
@@ -27,7 +28,8 @@ static bool keyword_search(keywords &keywords, translation_unit &tu)
     /* scan for keywords */
     char buf[LINE_MAX];
     std::string fname = tu.path() + "/" + tu.source_name();
-    printf("opening %s\n", fname.c_str());
+    if (global_options::instance().debug_level() >= 2)
+        printf("opening %s\n", fname.c_str());
     FILE *fd = fopen(fname.c_str(), "r");
     if (!fd) {
         perror("scanner::targets: can't open for keyword scan");
@@ -43,7 +45,6 @@ static bool keyword_search(keywords &keywords, translation_unit &tu)
         std::string tbuf(buf);
 
         if (std::regex_match(tbuf, pieces_match, pieces_regex, std::regex_constants::match_any)) {
-            std::cout << buf << '\n';
             if (pieces_match.size() >= 2) {
                 // first we lowercase
                 std::string key = pieces_match[1].str();
@@ -60,7 +61,8 @@ static bool keyword_search(keywords &keywords, translation_unit &tu)
                 while (std::getline(iss, token, '.'))
                 keybits.push_back(token);
 
-                printf("scanner::target: %s (%d bits) val %s\n", key.c_str(), keybits.size(), value.c_str());
+                if (global_options::instance().debug_level() >= 2)
+                    printf("scanner::target: %s (%d bits) val %s\n", key.c_str(), keybits.size(), value.c_str());
 
                 if (keybits.size() == 2) {
                     if (keybits[0] == "target") {
@@ -122,7 +124,8 @@ std::vector<target> scanner::targets(const char *dirname)
                 exit (EXIT_FAILURE);
             }
 
-            printf("scanning %s for targets\n", path);
+            if (global_options::instance().debug_level() >= 2)
+                printf("scanning %s for targets\n", path);
             std::vector<target> child_targets = scanner::targets(path);
             for (const target &t : child_targets) {
                 targets.push_back(t);
@@ -176,7 +179,7 @@ std::vector<target> scanner::targets(const char *dirname)
         current_target.set_name(tname);
         current_target.set_translation_units(cfiles);
         targets.push_back(current_target); // TODO: suboptimal
-        printf("got current target %s\n", tname.c_str());
+        printf("processed current target %s\n", tname.c_str());
     }
     return targets;
 }
