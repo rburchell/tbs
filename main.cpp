@@ -72,7 +72,8 @@ int main(int argc, char **argv)
                             return -1;
                         }
 
-                        printf("fd %d (job %s) had return code %d\n", it->first, it->second.c_str(), info.si_status);
+                        if (global_options::instance().debug_level() >= 3)
+                            printf("fd %d (job %s) had return code %d\n", it->first, it->second.c_str(), info.si_status);
 
                         if (info.si_status != 0) {
                             printf("error compiling %s\n", it->second.c_str());
@@ -100,7 +101,8 @@ int main(int argc, char **argv)
                 }
 
                 curjobs[compile_fd] = tu.source_name();
-                printf("compiling %s, compile_fd %d\n", tu.source_name().c_str(), compile_fd);
+                if (global_options::instance().debug_level() >= 3)
+                    printf("compiling %s, compile_fd %d\n", tu.source_name().c_str(), compile_fd);
             }
         }
 

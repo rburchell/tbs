@@ -11,10 +11,14 @@ public:
 
     int max_jobs() const;
 
+    int debug_level() const;
+
 private:
     global_options();
 
     int m_max_jobs;
+
+    int m_debug_level;
 };
 
 #endif // GLOBAL_OPTIONS_H
