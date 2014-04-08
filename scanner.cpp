@@ -33,7 +33,9 @@ static bool keyword_search(target &target, translation_unit &tu)
         std::regex pieces_regex("^\\/\\* \\$([a-Z.]+): (.+) \\*\\/$", std::regex_constants::icase);
         std::smatch pieces_match;
 
-        if (std::regex_match(std::string(buf), pieces_match, pieces_regex, std::regex_constants::match_any)) {
+        std::string tbuf(buf);
+
+        if (std::regex_match(tbuf, pieces_match, pieces_regex, std::regex_constants::match_any)) {
             std::cout << buf << '\n';
             if (pieces_match.size() >= 2) {
                 // first we lowercase
