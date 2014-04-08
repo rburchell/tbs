@@ -20,6 +20,8 @@ class target
 {
 public:
     target();
+    void set_path(const std::string &path);
+    std::string path() const;
     void set_name(const std::string &name);
     std::string name() const;
     std::vector<translation_unit> translation_units() const;
@@ -27,6 +29,7 @@ public:
 
 private:
     std::string m_name;
+    std::string m_path;
     std::vector<translation_unit> m_translation_units;
 };
 

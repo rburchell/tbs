@@ -17,11 +17,18 @@
 /* $Foo.Bar.Moo: 1 */
 /* $Foo.Bar.Moo.Cow: 1 */
 
-static bool keyword_search(target &target, translation_unit &tu)
+struct keywords
+{
+    std::string target_name;
+};
+
+static bool keyword_search(keywords &keywords, translation_unit &tu)
 {
     /* scan for keywords */
     char buf[LINE_MAX];
-    FILE *fd = fopen(tu.source_name().c_str(), "r");
+    std::string fname = tu.path() + "/" + tu.source_name();
+    printf("opening %s\n", fname.c_str());
+    FILE *fd = fopen(fname.c_str(), "r");
     if (!fd) {
         perror("scanner::targets: can't open for keyword scan");
         return false;
@@ -58,12 +65,7 @@ static bool keyword_search(target &target, translation_unit &tu)
                 if (keybits.size() == 2) {
                     if (keybits[0] == "target") {
                         if (keybits[1] == "name") {
-                            if (!target.name().empty()) {
-                                printf("scanner::targets: target %s already has a target, can't deal with another found in %s\n", target.name().c_str(), tu.source_name().c_str());
-                                return false;
-                            } else {
-                                target.set_name(value);
-                            }
+                            keywords.target_name = value;
                         }
                     }
                 }
@@ -87,38 +89,96 @@ static bool keyword_search(target &target, translation_unit &tu)
     return true;
 }
 
+/* assumption: dirname is an absolute path to the directory to retrieve targets
+ * from
+ */
 std::vector<target> scanner::targets(const char *dirname)
 {
-    char targbuf[PATH_MAX];
-    std::string tname = futils::basename(getcwd(targbuf, PATH_MAX));
-    std::vector<target> targs(1);
-    target &t = targs[0];
+    std::vector<target> targets;
     std::vector<translation_unit> cfiles;
+    std::string tname;
 
-    dirent *dnt = NULL;
-    DIR *m_dir = opendir(dirname);
-    while ((dnt = readdir(m_dir)) != NULL) {
-        const char *extension = futils::extension(dnt->d_name);
-        if (extension) {
-            if (strcmp(extension, "cpp") != 0 &&
-                strcmp(extension, "c") != 0) {
+    DIR *d = opendir(dirname);
+
+    if (!d) {
+        fprintf(stderr, "Cannot open directory '%s': %s\n", dirname, strerror (errno));
+        exit(EXIT_FAILURE);
+    }
+
+    struct dirent *dnt;
+
+    while ((dnt = readdir(d)) != NULL) {
+        if (dnt->d_type & DT_DIR) {
+            /* recurse, if it isn't us or the parent */
+            if (strcmp(dnt->d_name, "..") == 0 ||
+                strcmp(dnt->d_name, ".") == 0)
                 continue;
+
+            int path_length;
+            char path[PATH_MAX];
+
+            path_length = snprintf (path, PATH_MAX, "%s/%s", dirname, dnt->d_name);
+            if (path_length >= PATH_MAX) {
+                fprintf (stderr, "Path length has got too long.\n");
+                exit (EXIT_FAILURE);
             }
 
-            char cpath[PATH_MAX];
-            getcwd(cpath, PATH_MAX); // TODO: won't always be the case?
-            std::string path = std::string(cpath) + "/" + dnt->d_name;
-            translation_unit tu(path);
-            if (!keyword_search(t, tu))
-                exit(1); // TODO: refactor
-            cfiles.push_back(tu);
+            printf("scanning %s for targets\n", path);
+            std::vector<target> child_targets = scanner::targets(path);
+            for (const target &t : child_targets) {
+                targets.push_back(t);
+            }
+        } else {
+            const char *extension = futils::extension(dnt->d_name);
+            if (extension) {
+                if (strcmp(extension, "cpp") != 0 &&
+                    strcmp(extension, "c") != 0) {
+                    continue;
+                }
+
+                int path_length;
+                char path[PATH_MAX];
+
+                path_length = snprintf (path, PATH_MAX, "%s/%s", dirname, dnt->d_name);
+                if (path_length >= PATH_MAX) {
+                    fprintf (stderr, "Path length has got too long.\n");
+                    exit (EXIT_FAILURE);
+                }
+
+                translation_unit tu(path);
+                keywords k;
+                if (!keyword_search(k, tu))
+                    exit(1); // TODO: refactor
+
+                if (!k.target_name.empty()) {
+                    if (!tname.empty()) {
+                        printf("scanner::targets: target %s already has a target, can't deal with another found in %s\n", tname.c_str(), tu.source_name().c_str());
+                        exit(1);
+                    } else {
+                        tname = k.target_name;
+                    }
+                }
+
+                cfiles.push_back(tu);
+            }
         }
     }
-    closedir(m_dir);
 
-    if (t.name().empty())
-        t.set_name(tname);
-    t.set_translation_units(cfiles);
-    return targs;
+    if (closedir(d)) {
+        fprintf(stderr, "Could not close '%s': %s\n", dirname, strerror (errno));
+        exit(EXIT_FAILURE);
+    }
+
+    if (cfiles.size()) {
+        target current_target;
+        if (tname.empty())
+            tname = futils::basename(dirname);
+        current_target.set_path(dirname);
+        current_target.set_name(tname);
+        current_target.set_translation_units(cfiles);
+        targets.push_back(current_target); // TODO: suboptimal
+        printf("got current target %s\n", tname.c_str());
+    }
+    return targets;
 }
 

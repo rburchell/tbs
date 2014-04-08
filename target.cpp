@@ -31,6 +31,16 @@ target::target()
 {
 }
 
+void target::set_path(const std::string &path)
+{
+    m_path = path;
+}
+
+std::string target::path() const
+{
+    return m_path;
+}
+
 void target::set_name(const std::string &name)
 {
     m_name = name;

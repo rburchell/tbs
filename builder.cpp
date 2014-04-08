@@ -62,11 +62,17 @@ bool builder::link(const target &target)
 
     for (const translation_unit &tu : target.translation_units()) {
         params.push_back(tu.path() + "/.obj/" + tu.object_name());
+        printf("linking %s\n", tu.object_name().c_str());
     }
 
     std::stringstream ss;
     std::copy(params.begin(), params.end(), std::ostream_iterator<std::string>(ss, " "));
     std::string cmd = ss.str();
+
+    if (chdir(target.path().c_str()) == -1) {
+        perror("builder::link: chdir");
+        return -1;
+    }
 
     int retval = system(cmd.c_str());
     return retval == 0;

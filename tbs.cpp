@@ -50,7 +50,21 @@ int main(int argc, char **argv)
     }
 
 
-    std::vector<target> targets = scanner::targets(".");
+    char targbuf[PATH_MAX];
+    getcwd(targbuf, PATH_MAX); // TODO: errcheck
+    std::vector<target> targets = scanner::targets(targbuf);
+
+#if 0
+    for (const target &t : targets) {
+        printf("read target %s\n", t.name().c_str());
+
+        for (const translation_unit &tu : t.translation_units()) {
+            printf("source file %s object file %s in path %s\n", tu.source_name().c_str(), tu.object_name().c_str(), tu.path().c_str());
+        }
+    }
+
+    return 0;
+#endif
 
     for (const target &t : targets) {
         printf("building target %s\n", t.name().c_str());
