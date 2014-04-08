@@ -2,7 +2,6 @@
 #include <dirent.h>
 #include <errno.h>
 #include <unistd.h>
-#include <getopt.h>
 
 #include <map>
 #include <string>
@@ -14,41 +13,17 @@
 #include "scanner.h"
 #include "builder.h"
 #include "target.h"
+#include "global_options.h"
 
 #define EINTR_LOOP(var, cmd) \
     do { \
         var = cmd; \
     } while (var == -1 && errno == EINTR)
 
-
 int main(int argc, char **argv)
 {
-    int maxjobs = 2; // TODO: determine from core count
-
-    while (1) {
-        static struct option long_options[] =
-        {
-            { "jobs",  required_argument, NULL, 'j' }
-        };
-
-        int option_index = 0;
-        int c = getopt_long (argc, argv, ":j::", long_options, &option_index);
-
-        if (c == -1)
-            break;
-
-        switch (c) {
-            case 'j':
-                if (!optarg) {
-                    fprintf(stderr, "-j requires a number of jobs\n");
-                    return -1;
-                }
-
-                maxjobs = atoi(optarg);
-                break;
-        }
-    }
-
+    if (!global_options::instance().parse(argc, argv))
+        exit(EXIT_FAILURE);
 
     char targbuf[PATH_MAX];
     getcwd(targbuf, PATH_MAX); // TODO: errcheck
@@ -113,7 +88,7 @@ int main(int argc, char **argv)
             }
 
             // start builds
-            while (curjobs.size() < maxjobs && cfiles.size()) {
+            while (curjobs.size() < global_options::instance().max_jobs() && cfiles.size()) {
                 // take a job
                 translation_unit tu = cfiles.back();
                 cfiles.pop_back();
