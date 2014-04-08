@@ -28,11 +28,14 @@ std::string translation_unit::object_name() const
 }
 
 target::target()
+    : m_explicitly_named(false)
 {
 }
 
 void target::set_path(const std::string &path)
 {
+    if (m_name.empty())
+        m_name = futils::basename(path.c_str());
     m_path = path;
 }
 
@@ -43,12 +46,18 @@ std::string target::path() const
 
 void target::set_name(const std::string &name)
 {
+    m_explicitly_named = true;
     m_name = name;
 }
 
 std::string target::name() const
 {
     return m_name;
+}
+
+bool target::explicitly_named() const
+{
+    return m_explicitly_named;
 }
 
 std::vector<translation_unit> target::translation_units() const
@@ -59,5 +68,15 @@ std::vector<translation_unit> target::translation_units() const
 void target::set_translation_units(const std::vector<translation_unit> &files)
 {
     m_translation_units = files;
+}
+
+std::string target::compile_flags() const
+{
+    return m_compile_flags;
+}
+
+void target::set_compile_flags(const std::string &flags)
+{
+    m_compile_flags = flags;
 }
 

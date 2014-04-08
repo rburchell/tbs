@@ -105,6 +105,8 @@ int main(int argc, char **argv)
                 curjobs[compile_fd] = tu.source_name();
                 if (global_options::instance().debug_level() >= 3)
                     printf("compiling %s, compile_fd %d\n", tu.source_name().c_str(), compile_fd);
+                else
+                    printf("compiling %s\n", tu.source_name().c_str());
             }
         }
 
