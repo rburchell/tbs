@@ -25,6 +25,8 @@ int main(int argc, char **argv)
     if (!global_options::instance().parse(argc, argv))
         exit(EXIT_FAILURE);
 
+    printf("tbs v0.0.0 running with %d jobs\n", global_options::instance().max_jobs());
+
     char targbuf[PATH_MAX];
     getcwd(targbuf, PATH_MAX); // TODO: errcheck
     std::vector<target> targets = scanner::targets(targbuf);

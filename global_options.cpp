@@ -2,12 +2,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <thread>
+
 #include "global_options.h"
 
 global_options::global_options()
-    : m_max_jobs(0)
+    : m_max_jobs(std::thread::hardware_concurrency())
     , m_debug_level(0)
 {
+    if (m_max_jobs == 0) {
+        fprintf(stderr, "global_options::global_options: can't determine std::thread::hardware_concurrency, guessing 2");
+        m_max_jobs = 2;
+    }
 }
 
 global_options &global_options::instance()
@@ -18,8 +24,6 @@ global_options &global_options::instance()
 
 bool global_options::parse(int argc, char **argv)
 {
-    m_max_jobs = 2;
-
     while (1) {
         static struct option long_options[] =
         {
