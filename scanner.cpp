@@ -109,9 +109,8 @@ std::vector<target> scanner::targets(const char *dirname)
 
     while ((dnt = readdir(d)) != NULL) {
         if (dnt->d_type & DT_DIR) {
-            /* recurse, if it isn't us or the parent */
-            if (strcmp(dnt->d_name, "..") == 0 ||
-                strcmp(dnt->d_name, ".") == 0)
+            /* recurse, if it isn't a dot-dir */
+            if (dnt->d_name[0] == '.')
                 continue;
 
             int path_length;
