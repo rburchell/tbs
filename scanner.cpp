@@ -10,6 +10,7 @@
 #include <regex>
 #include <queue>
 #include <stack>
+#include <map>
 
 #include "target.h"
 #include "scanner.h"
@@ -21,12 +22,7 @@
 /* $Foo.Bar.Moo: 1 */
 /* $Foo.Bar.Moo.Cow: 1 */
 
-struct keywords
-{
-    std::string target_name;
-};
-
-static bool keyword_search(keywords &keywords, const translation_unit &tu)
+static bool keyword_search(const translation_unit &tu, std::map<std::string, std::string> &keywords)
 {
     /* scan for keywords */
     char buf[LINE_MAX];
@@ -56,24 +52,10 @@ static bool keyword_search(keywords &keywords, const translation_unit &tu)
                 // lowercase
                 std::transform(key.begin(), key.end(), key.begin(), ::tolower);
 
-                // now split
-                std::vector<std::string> keybits;
-
-                std::istringstream iss(key);
-                std::string token;
-                while (std::getline(iss, token, '.'))
-                keybits.push_back(token);
-
                 if (global_options::instance().debug_level() >= 2)
-                    printf("scanner::target: %s (%d bits) val %s\n", key.c_str(), keybits.size(), value.c_str());
+                    printf("scanner::target: %s val %s\n", key.c_str(), value.c_str());
 
-                if (keybits.size() == 2) {
-                    if (keybits[0] == "target") {
-                        if (keybits[1] == "name") {
-                            keywords.target_name = value;
-                        }
-                    }
-                }
+                keywords[key] = value;
             }
             #if 0
             for (size_t i = 0; i < pieces_match.size(); ++i) {
@@ -204,20 +186,21 @@ bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
 
         // scan the TUs in this directory for keywords & potential target changes
         for (const translation_unit &tu : n.files) {
-            keywords k;
-            if (!keyword_search(k, tu))
+            std::map<std::string, std::string> keywords;
+            if (!keyword_search(tu, keywords))
                 exit(1); // TODO: refactor
 
-            if (!k.target_name.empty()) {
+            std::string name = keywords["target.name"];
+            if (!name.empty()) {
                 // if the TU is in the same directory as the target, alter name
                 if (tu.path() == current_targets.top().path()) {
                     if (current_targets.top().explicitly_named()) {
                         printf("scanner::targets: target %s already has a name, can't deal with another found in %s\n", current_targets.top().name().c_str(), tu.source_name().c_str());
                         exit(1);
                     } else {
-                        current_targets.top().set_name(k.target_name);
+                        current_targets.top().set_name(name);
                         if (global_options::instance().debug_level() >= 2)
-                            printf("renaming target %s to %s\n", current_targets.top().path().c_str(), k.target_name.c_str());
+                            printf("renaming target %s to %s\n", current_targets.top().path().c_str(), name.c_str());
                     }
                 } else {
                     // otherwise start a new target
