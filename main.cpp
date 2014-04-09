@@ -1,3 +1,5 @@
+/* $Target.CompileFlags: -Wall -Wshadow -pedantic */
+
 #include <stdio.h>
 #include <dirent.h>
 #include <errno.h>
@@ -96,7 +98,7 @@ int main(int argc, char **argv)
                 translation_unit tu = cfiles.back();
                 cfiles.pop_back();
 
-                int compile_fd = builder::compile(tu);
+                int compile_fd = builder::compile(t, tu);
                 if (compile_fd == -1) {
                     printf("builder for compile job %s failed\n", tu.source_name().c_str());
                     return -1;

@@ -10,7 +10,7 @@
 #include "forkfd.h"
 #include "builder.h"
 
-int builder::compile(const translation_unit &tu)
+int builder::compile(const target &t, const translation_unit &tu)
 {
     std::vector<std::string> params;
     const char *extension = futils::extension(tu.source_name().c_str());
@@ -24,6 +24,7 @@ int builder::compile(const translation_unit &tu)
     params.push_back(tu.source_name());
     params.push_back("-o");
     params.push_back(".obj/" + tu.object_name());
+    params.push_back(t.compile_flags());
 
     std::stringstream ss;
     std::copy(params.begin(), params.end(), std::ostream_iterator<std::string>(ss, " "));

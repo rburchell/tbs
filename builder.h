@@ -5,7 +5,7 @@
 
 namespace builder
 {
-    int compile(const translation_unit &tu);
+    int compile(const target &t, const translation_unit &tu);
     bool link(const target &target);
 }
 

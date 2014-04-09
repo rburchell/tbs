@@ -212,10 +212,23 @@ bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
                         printf("creating new target %s\n", tu.path().c_str());
                 }
             }
+
+            // TODO: this is wrong. we must do this after the target has
+            // potentially been reset (below).
+            std::string cflags = keywords["target.compileflags"];
+            printf("cflags %s\n", cflags.c_str());
+            if (!cflags.empty()) {
+                target &t = current_targets.top();
+                if (t.compile_flags().empty()) {
+                    t.set_compile_flags(cflags);
+                } else {
+                    t.set_compile_flags(t.compile_flags() + " " + cflags);
+                }
+            }
         }
 
         // now (and only now; as we may have created a new target), parent the
-        // files to the current target
+        // files to the current target & do other things that affect the target
         {
             target &t = current_targets.top();
             std::vector<translation_unit> efiles = t.translation_units();
