@@ -206,6 +206,7 @@ bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
                     // otherwise start a new target
                     target t;
                     t.set_path(tu.path());
+                    t.set_name(name);
                     current_targets.push(t);
                     if (global_options::instance().debug_level() >= 2)
                         printf("creating new target %s\n", tu.path().c_str());
