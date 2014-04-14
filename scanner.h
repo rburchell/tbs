@@ -6,6 +6,6 @@ class target;
 namespace scanner
 {
     std::vector<target> targets(const char *dirname);
-};
+}
 
 
