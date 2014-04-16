@@ -1,4 +1,6 @@
-/* $Target.CompileFlags: -Wall -Wshadow -pedantic */
+/* $Target.CompileFlags: -Wall -Wshadow -Wno-variadic-macros */
+
+#define MODULE_NAME "tbs"
 
 #include <stdio.h>
 #include <dirent.h>
@@ -16,6 +18,7 @@
 #include "builder.h"
 #include "target.h"
 #include "global_options.h"
+#include "tbs.h"
 
 #define EINTR_LOOP(var, cmd) \
     do { \
@@ -27,26 +30,23 @@ int main(int argc, char **argv)
     if (!global_options::instance().parse(argc, argv))
         exit(EXIT_FAILURE);
 
-    printf("tbs v0.0.0 running with %d jobs\n", global_options::instance().max_jobs());
+    INFO("tbs v0.0.0 running with %d jobs", global_options::instance().max_jobs());
 
     char targbuf[PATH_MAX];
     getcwd(targbuf, PATH_MAX); // TODO: errcheck
     std::vector<target> targets = scanner::targets(targbuf);
 
-#if 0
     for (const target &t : targets) {
-        printf("read target %s\n", t.name().c_str());
+        DEBUG("read target %s", t.name().c_str());
 
         for (const translation_unit &tu : t.translation_units()) {
-            printf("source file %s object file %s in path %s\n", tu.source_name().c_str(), tu.object_name().c_str(), tu.path().c_str());
+            DEBUG("source file %s object file %s in path %s", tu.source_name().c_str(), tu.object_name().c_str(), tu.path().c_str());
         }
     }
 
-    return 0;
-#endif
 
     for (const target &t : targets) {
-        printf("building target %s\n", t.name().c_str());
+        INFO("building target %s", t.name().c_str());
         std::vector<translation_unit> cfiles = t.translation_units();
         std::map<int, std::string> curjobs;
 
@@ -77,10 +77,10 @@ int main(int argc, char **argv)
                         }
 
                         if (global_options::instance().debug_level() >= 3)
-                            printf("fd %d (job %s) had return code %d\n", it->first, it->second.c_str(), info.si_status);
+                            DEBUG("fd %d (job %s) had return code %d", it->first, it->second.c_str(), info.si_status);
 
                         if (info.si_status != 0) {
-                            printf("error compiling %s\n", it->second.c_str());
+                            WARNING("error compiling %s", it->second.c_str());
                             return -1;
                         }
 
@@ -100,15 +100,15 @@ int main(int argc, char **argv)
 
                 int compile_fd = builder::compile(t, tu);
                 if (compile_fd == -1) {
-                    printf("builder for compile job %s failed\n", tu.source_name().c_str());
+                    WARNING("builder for compile job %s failed", tu.source_name().c_str());
                     return -1;
                 }
 
                 curjobs[compile_fd] = tu.source_name();
                 if (global_options::instance().debug_level() >= 3)
-                    printf("compiling %s, compile_fd %d\n", tu.source_name().c_str(), compile_fd);
+                    DEBUG("compiling %s, compile_fd %d", tu.source_name().c_str(), compile_fd);
                 else
-                    printf("compiling %s\n", tu.source_name().c_str());
+                    INFO("compiling %s", tu.source_name().c_str());
             }
         }
 
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
         // TODO: optimize for the case where there's only a single file and don't
         // generate a .o
 
-        printf("linking %s\n", t.name().c_str());
+        INFO("linking %s", t.name().c_str());
         bool linked_ok = builder::link(t);
         if (!linked_ok)
             return -1;

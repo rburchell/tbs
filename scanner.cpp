@@ -1,3 +1,5 @@
+#define MODULE_NAME "scanner"
+
 #include <stdio.h>
 #include <dirent.h>
 #include <assert.h>
@@ -12,6 +14,7 @@
 #include <stack>
 #include <map>
 
+#include "tbs.h"
 #include "target.h"
 #include "scanner.h"
 #include "futils.h"
@@ -28,7 +31,7 @@ static bool keyword_search(const translation_unit &tu, std::map<std::string, std
     char buf[LINE_MAX];
     std::string fname = tu.path() + "/" + tu.source_name();
     if (global_options::instance().debug_level() >= 2)
-        printf("opening %s\n", fname.c_str());
+        DEBUG("opening %s", fname.c_str());
     FILE *fd = fopen(fname.c_str(), "r");
     if (!fd) {
         perror("scanner::targets: can't open for keyword scan");
@@ -53,7 +56,7 @@ static bool keyword_search(const translation_unit &tu, std::map<std::string, std
                 std::transform(key.begin(), key.end(), key.begin(), ::tolower);
 
                 if (global_options::instance().debug_level() >= 2)
-                    printf("scanner::target: %s val %s\n", key.c_str(), value.c_str());
+                    DEBUG("scanner::target: %s val %s", key.c_str(), value.c_str());
 
                 keywords[key] = value;
             }
@@ -95,7 +98,7 @@ bool directory_to_tree(const char *dirname, directory_node &root)
     DIR *d = opendir(dirname);
 
     if (!d) {
-        fprintf(stderr, "Cannot open directory '%s': %s\n", dirname, strerror (errno));
+        WARNING("cannot open directory '%s': %s", dirname, strerror (errno));
         return false;
     }
 
@@ -112,16 +115,16 @@ bool directory_to_tree(const char *dirname, directory_node &root)
 
             path_length = snprintf (path, PATH_MAX, "%s/%s", dirname, dnt->d_name);
             if (path_length >= PATH_MAX) {
-                fprintf (stderr, "Path length has got too long.\n");
+                WARNING("Path length has got too long.");
                 return false;
             }
 
             if (global_options::instance().debug_level() >= 2)
-                printf("scanning %s for stuff\n", path);
+                DEBUG("scanning %s for stuff", path);
 
             directory_node new_node(path);
             if (!directory_to_tree(path, new_node)) {
-                fprintf(stderr, "failed to scan %s", path);
+                WARNING("failed to scan %s", path);
                 return false;
             }
             root.children.push_back(new_node);
@@ -138,7 +141,7 @@ bool directory_to_tree(const char *dirname, directory_node &root)
 
                 path_length = snprintf (path, PATH_MAX, "%s/%s", dirname, dnt->d_name);
                 if (path_length >= PATH_MAX) {
-                    fprintf (stderr, "Path length has got too long.\n");
+                    WARNING("Path length has got too long.");
                     return false;
                 }
 
@@ -149,7 +152,7 @@ bool directory_to_tree(const char *dirname, directory_node &root)
     }
 
     if (closedir(d)) {
-        fprintf(stderr, "Could not close '%s': %s\n", dirname, strerror (errno));
+        WARNING("Could not close '%s': %s", dirname, strerror (errno));
         return false;
     }
 
@@ -182,7 +185,7 @@ bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
     while (!q.empty()) {
         directory_node n = q.front();
         if (global_options::instance().debug_level() >= 2)
-            printf("turning %s into targets\n", n.path.c_str());
+            DEBUG("turning %s into targets", n.path.c_str());
 
         // scan the TUs in this directory for keywords & potential target changes
         for (const translation_unit &tu : n.files) {
@@ -195,12 +198,12 @@ bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
                 // if the TU is in the same directory as the target, alter name
                 if (tu.path() == current_targets.top().path()) {
                     if (current_targets.top().explicitly_named()) {
-                        printf("scanner::targets: target %s already has a name, can't deal with another found in %s\n", current_targets.top().name().c_str(), tu.source_name().c_str());
+                        WARNING("target %s already has a name, can't deal with another found in %s", current_targets.top().name().c_str(), tu.source_name().c_str());
                         exit(1);
                     } else {
                         current_targets.top().set_name(name);
                         if (global_options::instance().debug_level() >= 2)
-                            printf("renaming target %s to %s\n", current_targets.top().path().c_str(), name.c_str());
+                            DEBUG("renaming target %s to %s", current_targets.top().path().c_str(), name.c_str());
                     }
                 } else {
                     // otherwise start a new target
@@ -209,14 +212,13 @@ bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
                     t.set_name(name);
                     current_targets.push(t);
                     if (global_options::instance().debug_level() >= 2)
-                        printf("creating new target %s\n", tu.path().c_str());
+                        DEBUG("creating new target %s", tu.path().c_str());
                 }
             }
 
             // TODO: this is wrong. we must do this after the target has
             // potentially been reset (below).
             std::string cflags = keywords["target.compileflags"];
-            printf("cflags %s\n", cflags.c_str());
             if (!cflags.empty()) {
                 target &t = current_targets.top();
                 if (t.compile_flags().empty()) {
@@ -237,7 +239,7 @@ bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
 
             if (global_options::instance().debug_level() >= 2)
                 for (const translation_unit &tu : n.files) {
-                    printf("target %s (%s) has file %s\n", t.name().c_str(), t.path().c_str(), tu.source_name().c_str());
+                    DEBUG("target %s (%s) has file %s", t.name().c_str(), t.path().c_str(), tu.source_name().c_str());
                 }
         }
 
@@ -246,7 +248,7 @@ bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
             target &t = current_targets.top();
             if (t.path() == n.path) {
                 if (global_options::instance().debug_level() >= 2)
-                    printf("finished target %s (%s)\n", t.name().c_str(), t.path().c_str());
+                    DEBUG("finished target %s (%s)", t.name().c_str(), t.path().c_str());
                 final_targets.push_back(t);
                 current_targets.pop();
             }
@@ -275,7 +277,7 @@ std::vector<target> scanner::targets(const char *dirname)
     bool retval = directory_to_tree(dirname, tree);
 
     if (!retval) {
-        fprintf(stderr, "couldn't scan directory tree under %s\n", dirname);
+        WARNING("couldn't scan directory tree under %s", dirname);
         exit(EXIT_FAILURE);
     }
 
@@ -283,7 +285,7 @@ std::vector<target> scanner::targets(const char *dirname)
     retval = tree_to_targets(tree, targets);
 
     if (!retval) {
-        fprintf(stderr, "couldn't make targets from tree under %s\n", dirname);
+        WARNING("couldn't make targets from tree under %s", dirname);
         exit(EXIT_FAILURE);
     }
 
