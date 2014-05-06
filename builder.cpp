@@ -15,10 +15,14 @@ int builder::compile(const target &t, const translation_unit &tu)
     std::vector<std::string> params;
     const char *extension = futils::extension(tu.source_name().c_str());
 
-    if (strcmp(extension, "cpp") == 0)
+    if (strcmp(extension, "cpp") == 0) {
         params.push_back("g++");
-    else if (strcmp(extension, "c") == 0)
+
+        if (t.has_feature("c++11"))
+            params.push_back("-std=c++11");
+    } else if (strcmp(extension, "c") == 0) {
         params.push_back("gcc");
+    }
 
     params.push_back("-c");
     params.push_back(tu.source_name());

@@ -227,6 +227,12 @@ bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
                     t.set_compile_flags(t.compile_flags() + " " + cflags);
                 }
             }
+
+            std::string features = keywords["target.features"];
+            if (!features.empty()) {
+                target &t = current_targets.top();
+                t.set_features(features);
+            }
         }
 
         // now (and only now; as we may have created a new target), parent the

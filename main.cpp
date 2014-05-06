@@ -1,4 +1,5 @@
 /* $Target.CompileFlags: -Wall -Wshadow -Wno-variadic-macros */
+/* $Target.Features: c++11 */
 
 #define MODULE_NAME "tbs"
 
