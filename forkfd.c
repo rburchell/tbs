@@ -252,7 +252,7 @@ search_next_child:
             goto chain_handler;
         }
 
-        for (int i = 0; i < (int)sizeofarray(children.entries); ++i) {
+        for (i = 0; i < (int)sizeofarray(children.entries); ++i) {
             /* acquire the child first: swap the PID with -1 to indicate it's busy */
             int pid = info.si_pid;
             if (ffd_atomic_compare_exchange(&children.entries[i].pid, &pid, -1,
