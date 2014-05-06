@@ -261,7 +261,18 @@ bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
 
         if (n.children.empty()) {
             // reached the end of this tree? no more targets/changes to this target
+            // TODO: this is wrong, we may have children on this node, but still
+            // be at the end of a target
+            // picture this:
+            // DIRECTORY
+            //  => TARGET
+            //      SUBDIRECTORY
+            //          => TARGET
+            //  when we recurse into SUBDIRECTORY, we create a new target, when
+            //  we pull back to DIRECTORY, and subsequently exit it, we should
+            //  end the target...
             target &t = current_targets.top();
+            DEBUG("EMPTY for %s, current target %s", n.path.c_str(), t.path().c_str());
             if (t.path() == n.path) {
                 if (global_options::instance().debug_level() >= 2)
                     DEBUG("finished target %s (%s)", t.name().c_str(), t.path().c_str());
