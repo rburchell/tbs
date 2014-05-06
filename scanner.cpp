@@ -263,8 +263,9 @@ bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
     }
 
     // how can we possibly get more assuming a valid tree
-    assert(current_targets.size() == 1);
-    final_targets.push_back(current_targets.top());
+    assert(current_targets.size() <= 1);
+    if (current_targets.size())
+        final_targets.push_back(current_targets.top());
     return true;
 }
 
