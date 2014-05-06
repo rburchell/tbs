@@ -5,10 +5,14 @@
 # error "Set MODULE_NAME first"
 #endif
 
+#include "global_options.h"
+
 #define DEBUG(fmt, ...) do { \
-        fprintf(stdout, "%s: [D] ", MODULE_NAME); \
-        fprintf(stdout, fmt, ##__VA_ARGS__); \
-        fprintf(stdout, "\n"); \
+        if (global_options::instance().debug_level() >= 1) { \
+            fprintf(stdout, "%s: [D] ", MODULE_NAME); \
+            fprintf(stdout, fmt, ##__VA_ARGS__); \
+            fprintf(stdout, "\n"); \
+        } \
     } while(0)
 
 #define INFO(fmt, ...) do { \
