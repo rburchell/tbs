@@ -62,8 +62,19 @@ bool builder::link(const target &target)
 {
     std::vector<std::string> params;
     params.push_back("g++");
+
+    // TODO: cross platform needed
+    if (target.type() == target::TYPE_DLL)
+        params.push_back("-dynamiclib");
+
     params.push_back("-o");
-    params.push_back(target.name());
+
+    std::string targname = target.name();
+
+    if (target.type() == target::TYPE_DLL)
+        targname += ".dylib";
+
+    params.push_back(targname);
 
     for (const translation_unit &tu : target.translation_units()) {
         params.push_back(tu.path() + "/.obj/" + tu.object_name());

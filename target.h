@@ -37,8 +37,17 @@ public:
     bool has_feature(const std::string &feature) const;
     void set_features(const std::string &features);
 
+    enum target_type {
+        TYPE_APPLICATION,
+        TYPE_DLL
+    };
+
+    target_type type() const;
+    void set_type(target_type type);
+
 private:
     std::string m_name;
+    target_type m_type;
     bool m_explicitly_named;
     std::string m_path;
     std::string m_compile_flags;

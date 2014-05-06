@@ -228,6 +228,21 @@ bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
                 target &t = current_targets.top();
                 t.set_features(features);
             }
+
+            std::string type = keywords["target.type"];
+            if (!type.empty()) {
+                target &t = current_targets.top();
+                if (type != "app" &&
+                    type != "dll") {
+                        WARNING("target %s has a bad type (%s) in %s", t.name().c_str(), type.c_str(), tu.source_name().c_str());
+                        exit(1);
+                }
+
+                if (type == "app")
+                    t.set_type(target::TYPE_APPLICATION);
+                else if (type == "dll")
+                    t.set_type(target::TYPE_DLL);
+            }
         }
 
         // now (and only now; as we may have created a new target), parent the
@@ -264,6 +279,8 @@ bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
     }
 
     // how can we possibly get more assuming a valid tree
+    if (global_options::instance().debug_level() >= 2)
+        DEBUG("current_targets.size is %d", current_targets.size());
     assert(current_targets.size() <= 1);
     if (current_targets.size())
         final_targets.push_back(current_targets.top());

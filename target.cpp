@@ -28,7 +28,8 @@ std::string translation_unit::object_name() const
 }
 
 target::target()
-    : m_explicitly_named(false)
+    : m_type(TYPE_APPLICATION)
+    , m_explicitly_named(false)
 {
 }
 
@@ -88,5 +89,15 @@ bool target::has_feature(const std::string &feature) const
 void target::set_features(const std::string &features)
 {
     m_features = features;
+}
+
+target::target_type target::type() const
+{
+    return m_type;
+}
+
+void target::set_type(target::target_type type)
+{
+    m_type = type;
 }
 
