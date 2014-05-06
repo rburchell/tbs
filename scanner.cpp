@@ -20,11 +20,6 @@
 #include "futils.h"
 #include "global_options.h"
 
-/* $Foo: 1 */
-/* $Foo.Bar: 1 */
-/* $Foo.Bar.Moo: 1 */
-/* $Foo.Bar.Moo.Cow: 1 */
-
 static bool keyword_search(const translation_unit &tu, std::map<std::string, std::string> &keywords)
 {
     /* scan for keywords */
