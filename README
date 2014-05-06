@@ -30,6 +30,7 @@ linking stages, e.g:
 /* $Target.CompileFlags: -std=c++ */ - modifies cflags over the whole target
 /* $Target.LinkerFlags: -lfoo */
 /* $Target.PkgConfig: sqlite3 */
+/* $Target.Features: c++11 */ - compile all c++ files as c++11
 
 there are three seperate scopes: File, Target, and Project.
 File affects a single TU, Target affects all files in a target, and Project
