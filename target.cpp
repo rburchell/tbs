@@ -71,14 +71,14 @@ void target::set_translation_units(const std::vector<translation_unit> &files)
     m_translation_units = files;
 }
 
-std::string target::compile_flags() const
+std::string target::compiler_flags() const
 {
-    return m_compile_flags;
+    return m_compiler_flags;
 }
 
-void target::set_compile_flags(const std::string &flags)
+void target::set_compiler_flags(const std::string &flags)
 {
-    m_compile_flags = flags;
+    m_compiler_flags = flags;
 }
 
 std::string target::linker_flags() const

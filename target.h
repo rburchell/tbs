@@ -31,8 +31,8 @@ public:
     std::vector<translation_unit> translation_units() const;
     void set_translation_units(const std::vector<translation_unit> &files);
 
-    std::string compile_flags() const;
-    void set_compile_flags(const std::string &flags);
+    std::string compiler_flags() const;
+    void set_compiler_flags(const std::string &flags);
 
     std::string linker_flags() const;
     void set_linker_flags(const std::string &flags);
@@ -53,7 +53,7 @@ private:
     target_type m_type;
     bool m_explicitly_named;
     std::string m_path;
-    std::string m_compile_flags;
+    std::string m_compiler_flags;
     std::string m_linker_flags;
     std::string m_features;
     std::vector<translation_unit> m_translation_units;

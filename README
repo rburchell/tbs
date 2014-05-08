@@ -26,8 +26,8 @@ the target property twice in one directory is illegal.
 translation units may set properties in code which affect the compilation and
 linking stages, e.g:
 
-/* $File.CompileFlags: -std=c++11 */
-/* $Target.CompileFlags: -std=c++ */ - modifies cflags over the whole target
+/* $File.CompilerFlags: -std=c++11 */
+/* $Target.CompilerFlags: -std=c++ */ - modifies cflags over the whole target
 /* $Target.LinkerFlags: -lfoo */
 /* $Target.PkgConfig: sqlite3 */
 /* $Target.Features: c++11 */ - compile all c++ files as c++11

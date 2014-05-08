@@ -31,7 +31,7 @@ int builder::compile(const target &t, const translation_unit &tu)
     params.push_back(tu.source_name());
     params.push_back("-o");
     params.push_back(".obj/" + tu.object_name());
-    params.push_back(t.compile_flags());
+    params.push_back(t.compiler_flags());
 
     std::stringstream ss;
     std::copy(params.begin(), params.end(), std::ostream_iterator<std::string>(ss, " "));

@@ -209,12 +209,12 @@ bool tree_to_targets(const directory_node &root, std::vector<target> &final_targ
         if (!keyword_search(tu, keywords))
             return false;
 
-        std::string cflags = keywords["target.compileflags"];
+        std::string cflags = keywords["target.compilerflags"];
         if (!cflags.empty()) {
-            if (unfinished_targets.top().compile_flags().empty()) {
-                unfinished_targets.top().set_compile_flags(cflags);
+            if (unfinished_targets.top().compiler_flags().empty()) {
+                unfinished_targets.top().set_compiler_flags(cflags);
             } else {
-                unfinished_targets.top().set_compile_flags(unfinished_targets.top().compile_flags() + " " + cflags);
+                unfinished_targets.top().set_compiler_flags(unfinished_targets.top().compiler_flags() + " " + cflags);
             }
         }
 
