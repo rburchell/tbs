@@ -1,3 +1,4 @@
+/* $Target.Name: tbs */
 /* $Target.CompileFlags: -Wall -Wshadow -Wno-variadic-macros */
 /* $Target.Features: c++11 */
 

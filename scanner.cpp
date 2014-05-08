@@ -25,8 +25,6 @@ static bool keyword_search(const translation_unit &tu, std::map<std::string, std
     /* scan for keywords */
     char buf[LINE_MAX];
     std::string fname = tu.path() + "/" + tu.source_name();
-    if (global_options::instance().debug_level() >= 2)
-        DEBUG("opening %s", fname.c_str());
     FILE *fd = fopen(fname.c_str(), "r");
     if (!fd) {
         perror("scanner::targets: can't open for keyword scan");
@@ -50,7 +48,7 @@ static bool keyword_search(const translation_unit &tu, std::map<std::string, std
                 // lowercase
                 std::transform(key.begin(), key.end(), key.begin(), ::tolower);
 
-                if (global_options::instance().debug_level() >= 2)
+                if (global_options::instance().debug_level() >= 4)
                     DEBUG("scanner::target: %s val %s", key.c_str(), value.c_str());
 
                 keywords[key] = value;
@@ -154,147 +152,123 @@ bool directory_to_tree(const char *dirname, directory_node &root)
     return true;
 }
 
-bool tree_to_targets(directory_node &root, std::vector<target> &final_targets)
+bool tree_to_targets(const directory_node &root, std::vector<target> &final_targets)
 {
-    std::queue<directory_node> q;
-    std::stack<target> current_targets;
+    static std::stack<target> unfinished_targets;
 
-    target rt;
-    rt.set_path(root.path);
-    current_targets.push(rt);
-
-    // we have a tree of directories (and files), we now need to turn this into
-    // a list (maybe one day, a tree) of targets.
-    //
-    // the rules for this are that we create an implicit root target, and every
-    // file in every subdirectory under a target goes into the current target
-    // until we find a directory with an explicitly created target.
-    //
-    // if we find one of those, we push a new current target onto the stack and
-    // repeat the process for that part of the directory tree, and so on.
-    //
-    // this obviously means we need to do a breadth-first traversal of the tree.
-    q.push(root);
-
-    // while there's something still in the tree..
-    while (!q.empty()) {
-        directory_node n = q.front();
-        if (global_options::instance().debug_level() >= 2)
-            DEBUG("turning %s into targets", n.path.c_str());
-
-        // scan the TUs in this directory for keywords & potential target changes
-        for (const translation_unit &tu : n.files) {
-            std::map<std::string, std::string> keywords;
-            if (!keyword_search(tu, keywords))
-                exit(1); // TODO: refactor
-
-            std::string name = keywords["target.name"];
-            if (!name.empty()) {
-                // if the TU is in the same directory as the target, alter name
-                if (tu.path() == current_targets.top().path()) {
-                    if (current_targets.top().explicitly_named()) {
-                        WARNING("target %s already has a name, can't deal with another found in %s", current_targets.top().name().c_str(), tu.source_name().c_str());
-                        exit(1);
-                    } else {
-                        current_targets.top().set_name(name);
-                        if (global_options::instance().debug_level() >= 2)
-                            DEBUG("renaming target %s to %s", current_targets.top().path().c_str(), name.c_str());
-                    }
-                } else {
-                    // otherwise start a new target
-                    target t;
-                    t.set_path(tu.path());
-                    t.set_name(name);
-                    current_targets.push(t);
-                    if (global_options::instance().debug_level() >= 2)
-                        DEBUG("creating new target %s", tu.path().c_str());
-                }
-            }
-
-            // TODO: this is wrong. we must do this after the target has
-            // potentially been reset (below).
-            std::string cflags = keywords["target.compileflags"];
-            if (!cflags.empty()) {
-                target &t = current_targets.top();
-                if (t.compile_flags().empty()) {
-                    t.set_compile_flags(cflags);
-                } else {
-                    t.set_compile_flags(t.compile_flags() + " " + cflags);
-                }
-            }
-
-            std::string features = keywords["target.features"];
-            if (!features.empty()) {
-                target &t = current_targets.top();
-                t.set_features(features);
-            }
-
-            std::string type = keywords["target.type"];
-            if (!type.empty()) {
-                target &t = current_targets.top();
-                if (type != "app" &&
-                    type != "dll") {
-                        WARNING("target %s has a bad type (%s) in %s", t.name().c_str(), type.c_str(), tu.source_name().c_str());
-                        exit(1);
-                }
-
-                if (type == "app")
-                    t.set_type(target::TYPE_APPLICATION);
-                else if (type == "dll")
-                    t.set_type(target::TYPE_DLL);
-            }
-        }
-
-        // now (and only now; as we may have created a new target), parent the
-        // files to the current target & do other things that affect the target
-        {
-            target &t = current_targets.top();
-            std::vector<translation_unit> efiles = t.translation_units();
-            efiles.insert(efiles.end(), n.files.begin(), n.files.end());
-            t.set_translation_units(efiles);
-
-            if (global_options::instance().debug_level() >= 2)
-                for (const translation_unit &tu : n.files) {
-                    DEBUG("target %s (%s) has file %s", t.name().c_str(), t.path().c_str(), tu.source_name().c_str());
-                }
-        }
-
-        if (n.children.empty()) {
-            // reached the end of this tree? no more targets/changes to this target
-            // TODO: this is wrong, we may have children on this node, but still
-            // be at the end of a target
-            // picture this:
-            // DIRECTORY
-            //  => TARGET
-            //      SUBDIRECTORY
-            //          => TARGET
-            //  when we recurse into SUBDIRECTORY, we create a new target, when
-            //  we pull back to DIRECTORY, and subsequently exit it, we should
-            //  end the target...
-            target &t = current_targets.top();
-            DEBUG("EMPTY for %s, current target %s", n.path.c_str(), t.path().c_str());
-            if (t.path() == n.path) {
-                if (global_options::instance().debug_level() >= 2)
-                    DEBUG("finished target %s (%s)", t.name().c_str(), t.path().c_str());
-                final_targets.push_back(t);
-                current_targets.pop();
-            }
-        } else {
-            // we have further to go in this branch... enqueue children
-            for (const directory_node &c : n.children)
-                q.push(c);
-        }
-
-        // pop visited
-        q.pop();
+    DEBUG("STARTING SUBDIRECTORY %s", root.path.c_str());
+    if (unfinished_targets.empty()) {
+        // first call, initialize the stack
+        target t;
+        t.set_path(root.path);
+        unfinished_targets.push(t);
+        DEBUG("STARTED INITIAL target %s (%s)", t.name().c_str(), t.path().c_str());
     }
 
-    // how can we possibly get more assuming a valid tree
+    // find a name for our target
+    for (const translation_unit &tu : root.files) {
+        std::map<std::string, std::string> keywords;
+        if (!keyword_search(tu, keywords))
+            return false;
+
+        std::string name = keywords["target.name"];
+        if (!name.empty()) {
+            // if the TU is in the same directory as the target, alter name
+            if (tu.path() == unfinished_targets.top().path()) {
+                if (unfinished_targets.top().explicitly_named()) {
+                    WARNING("target %s already has a name, can't deal with another found in %s", unfinished_targets.top().name().c_str(), tu.source_name().c_str());
+                    return false;
+                } else {
+                    unfinished_targets.top().set_name(name);
+                    if (global_options::instance().debug_level() >= 2)
+                        DEBUG("renaming target %s to %s", unfinished_targets.top().path().c_str(), name.c_str());
+                }
+            } else {
+                if (global_options::instance().debug_level() >= 2)
+                    DEBUG("STARTING new target %s (%s)", name.c_str(), tu.path().c_str());
+                // otherwise start a new target
+                target nt;
+                nt.set_path(tu.path());
+                nt.set_name(name);
+                unfinished_targets.push(nt);
+            }
+        }
+    }
+
+    // make sure the target has a name
+    // this will only apply for the first (implicitly created) target
+    if (!unfinished_targets.top().explicitly_named()) {
+        WARNING("target %s must be explicitly named!", unfinished_targets.top().name().c_str());
+        return false;
+    }
+
+    // now we have a final target set for the translation units, scan the
+    // files for keywords to set on this target
+    for (const translation_unit &tu : root.files) {
+        std::map<std::string, std::string> keywords;
+        if (!keyword_search(tu, keywords))
+            return false;
+
+        std::string cflags = keywords["target.compileflags"];
+        if (!cflags.empty()) {
+            if (unfinished_targets.top().compile_flags().empty()) {
+                unfinished_targets.top().set_compile_flags(cflags);
+            } else {
+                unfinished_targets.top().set_compile_flags(unfinished_targets.top().compile_flags() + " " + cflags);
+            }
+        }
+
+        std::string features = keywords["target.features"];
+        if (!features.empty()) {
+            unfinished_targets.top().set_features(features);
+        }
+
+        std::string type = keywords["target.type"];
+        if (!type.empty()) {
+            if (type != "app" &&
+                type != "dll") {
+                    WARNING("target %s has a bad type (%s) in %s", unfinished_targets.top().name().c_str(), type.c_str(), tu.source_name().c_str());
+                    return false;
+            }
+
+            if (type == "app")
+                unfinished_targets.top().set_type(target::TYPE_APPLICATION);
+            else if (type == "dll")
+                unfinished_targets.top().set_type(target::TYPE_DLL);
+        }
+    }
+
+    // add translation units to target
+    std::vector<translation_unit> efiles = unfinished_targets.top().translation_units();
+    efiles.insert(efiles.end(), root.files.begin(), root.files.end());
+    unfinished_targets.top().set_translation_units(efiles);
+
     if (global_options::instance().debug_level() >= 2)
-        DEBUG("current_targets.size is %d", current_targets.size());
-    assert(current_targets.size() <= 1);
-    if (current_targets.size())
-        final_targets.push_back(current_targets.top());
+        for (const translation_unit &tu : root.files) {
+            DEBUG("target %s (%s) has file %s", unfinished_targets.top().name().c_str(), unfinished_targets.top().path().c_str(), tu.source_name().c_str());
+        }
+
+    // recurse
+    for (const directory_node &c : root.children) {
+        bool r = tree_to_targets(c, final_targets);
+        if (!r)
+            return false;
+    }
+
+    if (unfinished_targets.top().path() == root.path) {
+        // finished recursing for this target
+        DEBUG("FINISHING new target %s (%s)", unfinished_targets.top().name().c_str(), unfinished_targets.top().path().c_str());
+        final_targets.push_back(unfinished_targets.top());
+        unfinished_targets.pop();
+        if (unfinished_targets.size()) {
+            DEBUG("NOW WANT %s", unfinished_targets.top().path().c_str());
+        } else {
+            DEBUG("DONE???");
+        }
+    } else {
+        DEBUG("FINISHED SUBDIRECTORY %s WANT %s", root.path.c_str(), unfinished_targets.top().path().c_str());
+    }
+
     return true;
 }
 
