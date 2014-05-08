@@ -81,6 +81,17 @@ void target::set_compile_flags(const std::string &flags)
     m_compile_flags = flags;
 }
 
+std::string target::linker_flags() const
+{
+    return m_linker_flags;
+}
+
+void target::set_linker_flags(const std::string &flags)
+{
+    m_linker_flags = flags;
+}
+
+
 bool target::has_feature(const std::string &feature) const
 {
     return m_features.find(feature) != std::string::npos;

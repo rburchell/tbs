@@ -1,3 +1,5 @@
+#define MODULE_NAME "builder"
+
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -9,6 +11,7 @@
 #include "futils.h"
 #include "forkfd.h"
 #include "builder.h"
+#include "tbs.h"
 
 int builder::compile(const target &t, const translation_unit &tu)
 {
@@ -67,6 +70,8 @@ bool builder::link(const target &target)
     if (target.type() == target::TYPE_DLL)
         params.push_back("-dynamiclib");
 
+    params.push_back(target.linker_flags());
+
     params.push_back("-o");
 
     std::string targname = target.name();
@@ -89,6 +94,7 @@ bool builder::link(const target &target)
         return -1;
     }
 
+    //DEBUG("LINKING %s", cmd.c_str());
     int retval = system(cmd.c_str());
     return retval == 0;
 }

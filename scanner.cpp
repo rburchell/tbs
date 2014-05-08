@@ -218,6 +218,15 @@ bool tree_to_targets(const directory_node &root, std::vector<target> &final_targ
             }
         }
 
+        std::string lflags = keywords["target.linkerflags"];
+        if (!lflags.empty()) {
+            if (unfinished_targets.top().linker_flags().empty()) {
+                unfinished_targets.top().set_linker_flags(lflags);
+            } else {
+                unfinished_targets.top().set_linker_flags(unfinished_targets.top().linker_flags() + " " + lflags);
+            }
+        }
+
         std::string features = keywords["target.features"];
         if (!features.empty()) {
             unfinished_targets.top().set_features(features);

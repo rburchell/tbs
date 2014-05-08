@@ -34,6 +34,9 @@ public:
     std::string compile_flags() const;
     void set_compile_flags(const std::string &flags);
 
+    std::string linker_flags() const;
+    void set_linker_flags(const std::string &flags);
+
     bool has_feature(const std::string &feature) const;
     void set_features(const std::string &features);
 
@@ -51,6 +54,7 @@ private:
     bool m_explicitly_named;
     std::string m_path;
     std::string m_compile_flags;
+    std::string m_linker_flags;
     std::string m_features;
     std::vector<translation_unit> m_translation_units;
 };
