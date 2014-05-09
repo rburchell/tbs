@@ -1,8 +1,30 @@
+what is it
+==========
+
+tbs is a toy build system. a tiny build system. a trashy build system. a
+trucking stupid build system.
+
+it's something I decided to write because I'm often writing a lot of small
+snippets to test things. it's not intended for serious use, and if you try use
+it seriously, you might want to reconsider.
+
+building
+========
+
+run build.sh. or, if you already have a tbs binary, run tbs. it's self-hosting.
+
 the spec
 ========
 
+(wherein I loosely describe the principles behind this thing. not everything is
+implemented, yet.)
+
+a project is e.g. a git repository. a collection of things you want to build.
 a project contains multiple targets.
+a target is something you want to build (an application or shared object, for
+instance).
 a target contains multiple translation units
+a translation unit is an individual file to build, e.g. *.c or *.cpp
 translation units are compiled, and then linked into targets
 
 a project may be specified via a text-format language (TBD) or by automagic
@@ -16,7 +38,7 @@ containing a subtarget, or any explicitly specified targets.
 the name of the target may be changed from the autodetected default (the
 directory name) by specifying the Target.Name property:
 
-/* $Target.Name: mycoolbinary */
+/* $Target.Name: mycoolbinary */ - must be specified
 /* $Target.Type: dll */ -- default is 'app'
 
 specifying the target property will cause the creation of a new target in the
